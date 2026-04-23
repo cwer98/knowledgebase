@@ -1,0 +1,76 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Theme {
+  id          Int       @id @default(autoincrement())
+  name        String
+  description String?
+  color       String    @default("#6366f1")
+  subjects    Subject[]
+  createdAt   DateTime  @default(now())
+}
+
+model Subject {
+  id             Int      @id @default(autoincrement())
+  themeId        Int
+  theme          Theme    @relation(fields: [themeId], references: [id], onDelete: Cascade)
+  name           String
+  description    String?
+  isPublic       Boolean  @default(true)
+  expertiseLevel Int      @default(0)
+  fiches         Fiche[]
+  createdAt      DateTime @default(now())
+}
+
+model ApiUsage {
+  id        Int      @id @default(autoincrement())
+  date      String   @unique
+  count     Int      @default(0)
+  updatedAt DateTime @updatedAt
+}
+
+model Fiche {
+  id          Int       @id @default(autoincrement())
+  subjectId   Int
+  subject     Subject   @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  title       String
+  concepts    String    @default("[]")
+  summary     String    @default("")
+  keyNumbers  String    @default("[]")
+  sections    String    @default("[]")
+  content     String    @default("")
+  deepening   String    @default("")
+  tags        String    @default("[]")
+  questions   Question[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Question {
+  id           Int               @id @default(autoincrement())
+  ficheId      Int
+  fiche        Fiche             @relation(fields: [ficheId], references: [id], onDelete: Cascade)
+  text         String
+  options      String
+  answer       Int
+  explanation  String
+  difficulty   String
+  type         String            @default("generated")
+  interactions UserInteraction[]
+  createdAt    DateTime          @default(now())
+}
+
+model UserInteraction {
+  id         Int      @id @default(autoincrement())
+  questionId Int
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  liked      Boolean  @default(false)
+  correct    Boolean?
+  createdAt  DateTime @default(now())
+}
