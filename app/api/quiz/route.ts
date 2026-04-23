@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { generateWithFallback } from '@/lib/gemini'
 import { incrementApiUsage } from '@/lib/apiUsage'
+import { parseArray } from '@/lib/parseAI'
 
 export async function POST(request: NextRequest) {
   try {
@@ -55,13 +56,10 @@ Réponds UNIQUEMENT avec un tableau JSON valide, sans texte supplémentaire.`
     const text = await generateWithFallback(prompt)
     await incrementApiUsage()
 
-    const jsonMatch = text.match(/\[[\s\S]*\]/)
-    if (!jsonMatch) return Response.json({ error: 'Format de réponse invalide' }, { status: 500 })
-
-    const questionsData = JSON.parse(jsonMatch[0])
+    const questionsData = parseArray(text) as { text: string; options: string[]; answer: number; explanation: string }[]
 
     const questions = await Promise.all(
-      questionsData.map((q: { text: string; options: string[]; answer: number; explanation: string }) =>
+      questionsData.map((q) =>
         prisma.question.create({
           data: {
             ficheId,

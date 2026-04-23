@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { generateWithFallback } from '@/lib/gemini'
 import { incrementApiUsage } from '@/lib/apiUsage'
+import { parseObject } from '@/lib/parseAI'
 
 export async function POST(request: NextRequest) {
   try {
@@ -58,15 +59,15 @@ Règles importantes :
     const text = await generateWithFallback(systemPrompt)
     await incrementApiUsage()
 
-    const jsonMatch = text.match(/\{[\s\S]*\}/)
-    if (!jsonMatch) return Response.json({ error: 'Format de réponse invalide' }, { status: 500 })
-
-    const data = JSON.parse(jsonMatch[0])
+    const data = parseObject(text) as {
+      title?: string; concepts?: unknown[]; tags?: unknown[];
+      summary?: string; keyNumbers?: unknown[]; sections?: unknown[]
+    }
 
     const fiche = await prisma.fiche.create({
       data: {
         subjectId,
-        title: data.title,
+        title: data.title || 'Sans titre',
         concepts: JSON.stringify(data.concepts || []),
         tags: JSON.stringify(data.tags || []),
         summary: data.summary || '',

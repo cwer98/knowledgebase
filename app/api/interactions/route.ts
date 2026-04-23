@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { generateWithFallback } from '@/lib/gemini'
 import { incrementApiUsage } from '@/lib/apiUsage'
+import { parseObject } from '@/lib/parseAI'
 
 export async function POST(request: NextRequest) {
   const body = await request.json()
@@ -47,10 +48,7 @@ Réponds UNIQUEMENT avec le JSON valide.`
           const text = await generateWithFallback(prompt)
           await incrementApiUsage()
 
-          const jsonMatch = text.match(/\{[\s\S]*\}/)
-          if (!jsonMatch) throw new Error('Parse error')
-
-          const { sectionIndex, paragraph } = JSON.parse(jsonMatch[0])
+          const { sectionIndex, paragraph } = parseObject(text) as { sectionIndex: number; paragraph: string }
 
           if (sectionIndex >= 0 && sectionIndex < sections.length) {
             sections[sectionIndex].content = sections[sectionIndex].content + '\n\n' + paragraph
